@@ -1,7 +1,12 @@
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
+
+        alias(libs.plugins.android.application) // Ya está aquí
+        alias(libs.plugins.kotlin.android)      // Ya está aquí
+        alias(libs.plugins.kotlin.compose)
+        id("com.google.devtools.ksp") version "1.9.23-1.0.19" // Añadiste KSP aquí
+
+
+// ... (resto del archivo android { ... } y dependencies { ... }) ...
 }
 
 android {
@@ -42,6 +47,7 @@ android {
 }
 
 dependencies {
+    implementation("io.coil-kt:coil-compose:2.6.0") // Revisa la última versión de Coil Compose
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -57,4 +63,8 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+    implementation("androidx.navigation:navigation-compose:2.7.7")
+    val room_version = "2.6.1" // Usa la última versión estable
+    implementation("androidx.room:room-runtime:$room_version")
+
 }

@@ -2,9 +2,7 @@ package com.example.spotfinder
 
 import android.app.Application
 import android.os.Bundle
-// --- 1. IMPORTACIÓN CAMBIADA ---
-// Se borró: import androidx.activity.ComponentActivity
-import androidx.fragment.app.FragmentActivity // <-- ESTA ES LA IMPORTACIÓN CORRECTA
+import androidx.fragment.app.FragmentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -39,6 +37,7 @@ import com.example.spotfinder.model.Spot
 import com.example.spotfinder.repository.SpotRepository
 import com.example.spotfinder.repository.UsuarioRepository
 import com.example.spotfinder.ui.theme.SpotFinderTheme
+import com.example.spotfinder.util.SessionManager
 import com.example.spotfinder.view.AddSpotScreen
 import com.example.spotfinder.view.LoginScreen
 import com.example.spotfinder.view.RegisterScreen
@@ -47,13 +46,13 @@ import com.example.spotfinder.viewmodel.SpotsViewModelFactory
 import com.example.spotfinder.viewmodel.UsuarioViewModel
 import com.example.spotfinder.viewmodel.UsuarioViewModelFactory
 import com.example.spotfinder.view.UserScreen
+import com.example.spotfinder.view.MapScreen
 
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 
-// --- 2. CLASE CAMBIADA ---
-class MainActivity : FragmentActivity() { // <-- ESTA LÍNEA ES LA CORRECCIÓN
+class MainActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -81,18 +80,21 @@ fun SpotFinderApp() {
 
     val usuarioRepository = UsuarioRepository(database.usuarioDao())
     val usuarioViewModel: UsuarioViewModel = viewModel(factory = UsuarioViewModelFactory(usuarioRepository))
+    
+    val sessionManager = remember { SessionManager(context) }
+    val startDestination = if (sessionManager.isLoggedIn()) "home" else "login"
 
     val navController = rememberNavController()
 
-    NavHost(navController = navController, startDestination = "login") {
+    NavHost(navController = navController, startDestination = startDestination) {
         composable("login") {
-            LoginScreen(navController = navController, usuarioViewModel = usuarioViewModel)
+            LoginScreen(navController = navController, usuarioViewModel = usuarioViewModel, sessionManager = sessionManager)
         }
         composable("register") {
             RegisterScreen(navController = navController, usuarioViewModel = usuarioViewModel)
         }
         composable("home") {
-            HomeScreen(spotsViewModel = spotsViewModel, navController = navController)
+            HomeScreen(spotsViewModel = spotsViewModel, navController = navController, sessionManager = sessionManager)
         }
         composable("add_spot") {
             AddSpotScreen(spotsViewModel = spotsViewModel, onSpotAdded = {
@@ -103,11 +105,15 @@ fun SpotFinderApp() {
             UserScreen(
                 usuarioViewModel = usuarioViewModel,
                 onLogout = {
+                    sessionManager.setLoggedIn(false)
                     navController.navigate("login") {
                         popUpTo("home") { inclusive = true }
                     }
                 }
             )
+        }
+        composable("map_screen") { 
+            MapScreen(navController = navController)
         }
     }
 }
@@ -115,7 +121,7 @@ fun SpotFinderApp() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(spotsViewModel: SpotsViewModel, navController: NavController) {
+fun HomeScreen(spotsViewModel: SpotsViewModel, navController: NavController, sessionManager: SessionManager) {
     val uiState by spotsViewModel.uiState.collectAsState()
     var menuExpanded by remember { mutableStateOf(false) }
 
@@ -124,8 +130,7 @@ fun HomeScreen(spotsViewModel: SpotsViewModel, navController: NavController) {
             TopAppBar(
                 title = {
                     Box(
-                        modifier = Modifier
-                            .clickable { menuExpanded = true }
+                        modifier = Modifier.clickable { menuExpanded = true }
                     ) {
                         Image(
                             painter = painterResource(id = R.drawable.logospotfinder),
@@ -143,6 +148,13 @@ fun HomeScreen(spotsViewModel: SpotsViewModel, navController: NavController) {
                                     navController.navigate("user_screen")
                                 }
                             )
+                            DropdownMenuItem(
+                                text = { Text("Mapa de Spots") },
+                                onClick = {
+                                    menuExpanded = false
+                                    navController.navigate("map_screen")
+                                }
+                            )
                         }
                     }
                 },
@@ -151,6 +163,7 @@ fun HomeScreen(spotsViewModel: SpotsViewModel, navController: NavController) {
                 ),
                 actions = {
                     IconButton(onClick = {
+                        sessionManager.setLoggedIn(false)
                         navController.navigate("login") {
                             popUpTo("home") { inclusive = true }
                         }
@@ -192,7 +205,7 @@ fun SearchBar() {
     var text by remember { mutableStateOf("") }
     OutlinedTextField(
         value = text,
-        onValueChange = { text = it }, // Corregido de onValueValueChange
+        onValueChange = { text = it },
         label = { Text("Buscar Spot...") },
         modifier = Modifier.fillMaxWidth()
     )

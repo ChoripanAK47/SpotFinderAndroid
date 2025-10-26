@@ -74,9 +74,6 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     implementation(libs.androidx.navigation.compose)
 
-    // --- ELIMINADA --- (Esta línea estaba duplicada)
-    // implementation(libs.androidx.compose.material3)
-
     // Room Database
     val room_version = "2.8.3"
     implementation("androidx.room:room-runtime:${room_version}")
@@ -84,4 +81,8 @@ dependencies {
     ksp("androidx.room:room-compiler:$room_version")
     implementation("androidx.biometric:biometric:1.1.0")
     implementation("androidx.fragment:fragment-ktx:1.8.1")
+
+    // Google Maps for Compose
+    implementation("com.google.maps.android:maps-compose:4.3.3")
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
 }

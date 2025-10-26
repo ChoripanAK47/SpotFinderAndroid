@@ -2,7 +2,9 @@ package com.example.spotfinder
 
 import android.app.Application
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+// --- 1. IMPORTACIÓN CAMBIADA ---
+// Se borró: import androidx.activity.ComponentActivity
+import androidx.fragment.app.FragmentActivity // <-- ESTA ES LA IMPORTACIÓN CORRECTA
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -44,8 +46,15 @@ import com.example.spotfinder.viewmodel.SpotsViewModel
 import com.example.spotfinder.viewmodel.SpotsViewModelFactory
 import com.example.spotfinder.viewmodel.UsuarioViewModel
 import com.example.spotfinder.viewmodel.UsuarioViewModelFactory
+import com.example.spotfinder.view.UserScreen
 
-class MainActivity : ComponentActivity() {
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
+
+// --- 2. CLASE CAMBIADA ---
+class MainActivity : FragmentActivity() { // <-- ESTA LÍNEA ES LA CORRECCIÓN
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -66,21 +75,20 @@ fun SpotFinderApp() {
     val context = LocalContext.current
     val application = context.applicationContext as Application
     val database = AppDatabase.getDatabase(application)
-    
-    // Creación de Repositorios y ViewModels
+
     val spotRepository = SpotRepository(database.spotDao())
     val spotsViewModel: SpotsViewModel = viewModel(factory = SpotsViewModelFactory(spotRepository))
-    
+
     val usuarioRepository = UsuarioRepository(database.usuarioDao())
     val usuarioViewModel: UsuarioViewModel = viewModel(factory = UsuarioViewModelFactory(usuarioRepository))
-    
+
     val navController = rememberNavController()
 
     NavHost(navController = navController, startDestination = "login") {
         composable("login") {
             LoginScreen(navController = navController, usuarioViewModel = usuarioViewModel)
         }
-        composable("register") { // Ruta de registro
+        composable("register") {
             RegisterScreen(navController = navController, usuarioViewModel = usuarioViewModel)
         }
         composable("home") {
@@ -91,6 +99,16 @@ fun SpotFinderApp() {
                 navController.popBackStack()
             })
         }
+        composable("user_screen") {
+            UserScreen(
+                usuarioViewModel = usuarioViewModel,
+                onLogout = {
+                    navController.navigate("login") {
+                        popUpTo("home") { inclusive = true }
+                    }
+                }
+            )
+        }
     }
 }
 
@@ -99,22 +117,40 @@ fun SpotFinderApp() {
 @Composable
 fun HomeScreen(spotsViewModel: SpotsViewModel, navController: NavController) {
     val uiState by spotsViewModel.uiState.collectAsState()
+    var menuExpanded by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Image(
-                        painter = painterResource(id = R.drawable.logospotfinder),
-                        contentDescription = "Logo SpotFinder",
-                        modifier = Modifier.height(32.dp)
-                    )
+                    Box(
+                        modifier = Modifier
+                            .clickable { menuExpanded = true }
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.logospotfinder),
+                            contentDescription = "Logo SpotFinder",
+                            modifier = Modifier.height(32.dp)
+                        )
+                        DropdownMenu(
+                            expanded = menuExpanded,
+                            onDismissRequest = { menuExpanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Mi Perfil") },
+                                onClick = {
+                                    menuExpanded = false
+                                    navController.navigate("user_screen")
+                                }
+                            )
+                        }
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = colorResource(id = R.color.brand_blue)
                 ),
-                actions = { 
-                    IconButton(onClick = { 
+                actions = {
+                    IconButton(onClick = {
                         navController.navigate("login") {
                             popUpTo("home") { inclusive = true }
                         }
@@ -139,13 +175,13 @@ fun HomeScreen(spotsViewModel: SpotsViewModel, navController: NavController) {
             Spacer(modifier = Modifier.height(16.dp))
             FilterChips()
             Spacer(modifier = Modifier.height(16.dp))
-            
+
             if (uiState.isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
             } else {
-                SpotList(spots = uiState.spots)
+                SpotList(spots = uiState.spots, spotsViewModel = spotsViewModel)
             }
         }
     }
@@ -156,7 +192,7 @@ fun SearchBar() {
     var text by remember { mutableStateOf("") }
     OutlinedTextField(
         value = text,
-        onValueChange = { text = it },
+        onValueChange = { text = it }, // Corregido de onValueValueChange
         label = { Text("Buscar Spot...") },
         modifier = Modifier.fillMaxWidth()
     )
@@ -174,19 +210,20 @@ fun FilterChips() {
     }
 }
 
+
 @Composable
-fun SpotList(spots: List<Spot>) {
+fun SpotList(spots: List<Spot>, spotsViewModel: SpotsViewModel) {
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(spots) { spot ->
-            SpotCard(spot = spot)
+            SpotCard(spot = spot, viewModel = spotsViewModel)
         }
     }
 }
 
 @Composable
-fun SpotCard(spot: Spot) {
+fun SpotCard(spot: Spot, viewModel: SpotsViewModel) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -204,7 +241,27 @@ fun SpotCard(spot: Spot) {
                 contentScale = ContentScale.Crop
             )
             Column(modifier = Modifier.padding(16.dp)) {
-                Text(text = spot.nombreSpot, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = spot.nombreSpot,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp,
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(onClick = { viewModel.delete(spot) }) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Eliminar Spot",
+                            tint = Color.Gray
+                        )
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(text = spot.comunaSpot, fontSize = 14.sp, color = Color.Gray)
             }

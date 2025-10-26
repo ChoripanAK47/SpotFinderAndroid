@@ -1,6 +1,6 @@
 package com.example.spotfinder.viewmodel
 
-import android.util.Log // <-- ¡NUEVA IMPORTACIÓN!
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -19,7 +19,7 @@ sealed interface LoginState {
     data class Error(val message: String) : LoginState
 }
 
-// --- Estados para el Registro (Sin cambios, ¡está correcto!) ---
+// --- Estados para el Registro (Sin cambios) ---
 sealed interface RegisterState {
     object Idle : RegisterState
     object Loading : RegisterState
@@ -27,8 +27,7 @@ sealed interface RegisterState {
     data class Error(val message: String) : RegisterState
 }
 
-// --- ¡NUEVO! Estados para Actualizar Perfil ---
-// (Esto es para que funcione igual que RegisterScreen)
+// --- Estados para Actualizar Perfil (Sin cambios) ---
 sealed interface UpdateProfileState {
     object Idle : UpdateProfileState
     object Loading : UpdateProfileState
@@ -38,7 +37,7 @@ sealed interface UpdateProfileState {
 
 class UsuarioViewModel(private val repository: UsuarioRepository) : ViewModel() {
 
-    // --- Lógica de Registro (Sin cambios, ¡está correcto!) ---
+    // --- Lógica de Registro (Sin cambios) ---
     private val _registerState = MutableStateFlow<RegisterState>(RegisterState.Idle)
     val registerState: StateFlow<RegisterState> = _registerState.asStateFlow()
 
@@ -75,7 +74,6 @@ class UsuarioViewModel(private val repository: UsuarioRepository) : ViewModel() 
     private val _loginState = MutableStateFlow<LoginState>(LoginState.Idle)
     val loginState: StateFlow<LoginState> = _loginState.asStateFlow()
 
-    // Estado para guardar el usuario actual (Sin cambios)
     private val _currentUser = MutableStateFlow<Usuario?>(null)
     val currentUser: StateFlow<Usuario?> = _currentUser.asStateFlow()
 
@@ -98,57 +96,58 @@ class UsuarioViewModel(private val repository: UsuarioRepository) : ViewModel() 
 
     // --- Función para cerrar sesión (Sin cambios) ---
     fun logout() {
-        _currentUser.value = null // Limpia el usuario
-        _loginState.value = LoginState.Idle // Resetea el estado de login
+        _currentUser.value = null
+        _loginState.value = LoginState.Idle
     }
 
-    // -----------------------------------------------------------------
-    // --- ¡COMIENZA TODO LO NUEVO QUE FALTABA PARA "UpdateUserName"! ---
-    // -----------------------------------------------------------------
-
-    // --- 1. NUEVO StateFlow para la actualización de perfil ---
+    // --- Lógica de Actualización de Perfil (Sin cambios) ---
     private val _updateProfileState = MutableStateFlow<UpdateProfileState>(UpdateProfileState.Idle)
     val updateProfileState: StateFlow<UpdateProfileState> = _updateProfileState.asStateFlow()
 
-    // --- 2. ¡NUEVA FUNCIÓN AÑADIDA! (La que faltaba) ---
     fun updateUserName(newName: String) {
         viewModelScope.launch {
-            // Informamos que estamos "Cargando"
             _updateProfileState.value = UpdateProfileState.Loading
-
             val currentUser = _currentUser.value
 
-            // Validación
             if (currentUser == null || currentUser.nombre == newName || newName.isBlank()) {
-                _updateProfileState.value = UpdateProfileState.Idle // No hay nada que hacer
+                _updateProfileState.value = UpdateProfileState.Idle
                 return@launch
             }
 
             try {
                 val updatedUser = currentUser.copy(nombre = newName)
-
-                // ¡Asegúrate de tener .update en tu Repository y Dao!
                 repository.update(updatedUser)
-
                 _currentUser.value = updatedUser
-
-                // ¡Informamos que fue un ÉXITO!
                 _updateProfileState.value = UpdateProfileState.Success
-
             } catch (e: Exception) {
                 Log.e("UsuarioViewModel", "Error al actualizar el nombre: ${e.message}")
-                // ¡Informamos del ERROR!
                 _updateProfileState.value = UpdateProfileState.Error("Error al actualizar el nombre.")
             }
         }
     }
 
-    // --- 3. ¡NUEVA FUNCIÓN AÑADIDA! (Para resetear el estado) ---
     fun resetUpdateProfileState() {
         _updateProfileState.value = UpdateProfileState.Idle
     }
-    // -------------------------------------
-}
+
+    // -----------------------------------------------------------------
+    // --- ¡AQUÍ ESTÁ LA NUEVA FUNCIÓN AÑADIDA! (Paso 3) ---
+    // -----------------------------------------------------------------
+
+    /**
+     * Verifica si un email y contraseña coinciden en la BD.
+     * Es 'suspend' para no bloquear el hilo principal.
+     */
+    suspend fun verifyPassword(email: String, password: String): Boolean {
+        // Llama al repositorio (igual que como lo hace la función login)
+        val user = repository.getUsuario(email, password)
+
+        // Devuelve 'true' si el usuario existe (contraseña correcta)
+        // y 'false' si 'user' es null (contraseña incorrecta).
+        return user != null
+    }
+
+} // Esta es la llave que cierra tu clase UsuarioViewModel
 
 // Factory (Sin cambios)
 class UsuarioViewModelFactory(private val repository: UsuarioRepository) : ViewModelProvider.Factory {

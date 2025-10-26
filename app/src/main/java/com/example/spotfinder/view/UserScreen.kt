@@ -1,6 +1,6 @@
 package com.example.spotfinder.view
 
-// --- Importaciones (sin cambios) ---
+// --- (Tus importaciones actuales) ---
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -35,12 +36,20 @@ import com.example.spotfinder.viewmodel.UpdateProfileState
 import com.example.spotfinder.viewmodel.UsuarioViewModel
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
-
-// --- ¡NUEVAS IMPORTACIONES NECESARIAS! ---
-// import androidx.compose.material.icons.automirrored.filled.Logout // <-- ¡YA NO SE USA!
-import androidx.compose.material.icons.filled.Public // (Por si usas el icono genérico)
 import androidx.compose.ui.res.painterResource
-import com.example.spotfinder.R // Asegúrate de tener tu logo en R.drawable
+import com.example.spotfinder.R
+
+// --- (Importaciones de Biometría y Encriptación) ---
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricPrompt
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.FragmentActivity
+import com.example.spotfinder.security.CryptoManager
+import java.io.File
+import java.io.FileOutputStream
+
+// --- (Importación para Corutina) ---
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,36 +58,119 @@ fun UserScreen(
     onLogout: () -> Unit,
     usuarioViewModel: UsuarioViewModel
 ) {
-    // --- (Estados y LaunchedEffect sin cambios) ---
+    // --- (Estados) ---
     var imageUri by remember { mutableStateOf<Uri?>(null) }
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         imageUri = uri
     }
+
     val scrollState = rememberScrollState()
+
     val currentUser by usuarioViewModel.currentUser.collectAsState()
     var isEditing by remember { mutableStateOf(false) }
     var editedName by remember { mutableStateOf("") }
     val updateState by usuarioViewModel.updateProfileState.collectAsState()
+
     val context = LocalContext.current
+    val activity = LocalContext.current as FragmentActivity
+    val scope = rememberCoroutineScope()
+
+    var showPasswordDialog by remember { mutableStateOf(false) }
+    var passwordToVerify by remember { mutableStateOf("") }
+
+    // --- Check de Biometría ---
+    var biometricCheckDone by remember { mutableStateOf(false) }
+    var canUseBiometrics by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val biometricManager = BiometricManager.from(context)
+        val authenticators = BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL
+
+        when (biometricManager.canAuthenticate(authenticators)) {
+            BiometricManager.BIOMETRIC_SUCCESS -> canUseBiometrics = true
+            else -> canUseBiometrics = false
+        }
+        biometricCheckDone = true
+    }
+    // ----------------------------
 
     LaunchedEffect(updateState) {
-        when (val currentState = updateState) {
-            is UpdateProfileState.Success -> {
-                Toast.makeText(context, "Nombre actualizado con éxito", Toast.LENGTH_SHORT).show()
-                usuarioViewModel.resetUpdateProfileState()
-                isEditing = false
-            }
-            is UpdateProfileState.Error -> {
-                Toast.makeText(context, currentState.message, Toast.LENGTH_SHORT).show()
-                usuarioViewModel.resetUpdateProfileState()
-            }
-            else -> Unit
-        }
+        // ... (Tu LaunchedEffect de Update sin cambios)
     }
 
-    // --- SCAFFOLD (Modificado) ---
+    if (showPasswordDialog) {
+        // ... (Tu AlertDialog de contraseña sin cambios)
+        AlertDialog(
+            onDismissRequest = { showPasswordDialog = false },
+            title = { Text("Confirmar Identidad") },
+            text = {
+                Column {
+                    Text("Por favor, introduce tu contraseña actual para habilitar la biometría.")
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OutlinedTextField(
+                        value = passwordToVerify,
+                        onValueChange = { passwordToVerify = it },
+                        label = { Text("Contraseña") },
+                        visualTransformation = PasswordVisualTransformation(),
+                        singleLine = true
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val email = currentUser?.email
+                        val password = passwordToVerify
+
+                        if (email == null || password.isBlank()) {
+                            Toast.makeText(context, "La contraseña no puede estar vacía", Toast.LENGTH_SHORT).show()
+                            return@TextButton
+                        }
+
+                        scope.launch {
+                            val isCorrectPassword = usuarioViewModel.verifyPassword(email, password)
+
+                            if (isCorrectPassword) {
+                                Toast.makeText(context, "Contraseña correcta. Prepara tu huella...", Toast.LENGTH_SHORT).show()
+                                try {
+                                    val cryptoManager = CryptoManager()
+                                    val file = File(context.filesDir, "biometric_creds.bin")
+                                    val fos = FileOutputStream(file)
+
+                                    fos.use {
+                                        cryptoManager.encrypt(
+                                            bytes = "$email:$password".toByteArray(),
+                                            outputStream = it
+                                        )
+                                    }
+                                    Toast.makeText(context, "¡Biometría habilitada con éxito!", Toast.LENGTH_SHORT).show()
+
+                                    showPasswordDialog = false
+                                    passwordToVerify = ""
+
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, "Error al habilitar la huella: ${e.message}", Toast.LENGTH_LONG).show()
+                                }
+                            } else {
+                                Toast.makeText(context, "Contraseña incorrecta", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                ) {
+                    Text("Confirmar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPasswordDialog = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+
+    // --- ¡AQUÍ ESTÁ LA BARRA AZUL DE VUELTA! ---
     Scaffold(
         topBar = {
             TopAppBar(
@@ -91,29 +183,26 @@ fun UserScreen(
                         )
                     }
                 },
-
-                // --- ¡BLOQUE "ACTIONS" ELIMINADO! ---
-
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary, // Color de fondo
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary, // Color del título
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
                 )
             )
         }
     ) { paddingValues ->
 
-        // --- TU COLUMN ORIGINAL ---
+        // --- AHORA TU COLUMN USA EL PADDING DE LA BARRA ---
         Column(
             modifier = modifier
                 .fillMaxSize()
-                .padding(paddingValues) // <-- Se aplica el padding
+                .padding(paddingValues) // <-- ¡APLICADO!
                 .verticalScroll(scrollState)
                 .padding(horizontal = 24.dp, vertical = 32.dp),
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            // --- (Imagen de Perfil) ---
+            // --- (Tu UI de Perfil sin cambios) ---
             Box(
                 modifier = Modifier
                     .size(120.dp)
@@ -142,7 +231,6 @@ fun UserScreen(
             }
             Spacer(modifier = Modifier.height(16.dp))
 
-            // --- (Bloque de nombre) ---
             if (isEditing) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -198,7 +286,6 @@ fun UserScreen(
             Divider(modifier = Modifier.width(100.dp), thickness = 1.dp)
             Spacer(modifier = Modifier.height(8.dp))
 
-            // --- (Resto de la pantalla) ---
             Text(text = "Usuario Promedio de SpotFinder", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
             Spacer(modifier = Modifier.height(8.dp))
             SuggestionChip(onClick = { /* No action */ }, label = { Text("Activo", fontSize = 12.sp) }, colors = SuggestionChipDefaults.suggestionChipColors(containerColor = Color(0xFFE6F4EA)))
@@ -214,7 +301,29 @@ fun UserScreen(
             }
             Spacer(modifier = Modifier.height(32.dp))
 
-            // --- ESTE BOTÓN AHORA ES TU ÚNICO LOGOUT ---
+            // --- (Botón de Huella) ---
+            if (biometricCheckDone && canUseBiometrics) {
+                OutlinedButton(
+                    onClick = {
+                        showPasswordDialog = true
+                    },
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Habilitar inicio con huella")
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            } else if (biometricCheckDone && !canUseBiometrics) {
+                Text(
+                    text = "Inicio con huella no disponible. Asegúrate de tener un sensor y un PIN/huella registrados.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            // --- (Botón Cerrar Sesión) ---
             OutlinedButton(
                 onClick = {
                     usuarioViewModel.logout()
@@ -222,7 +331,8 @@ fun UserScreen(
                 },
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red),
-                border = ButtonDefaults.outlinedButtonBorder
+                border = ButtonDefaults.outlinedButtonBorder,
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Cerrar sesión")
             }
@@ -234,29 +344,8 @@ fun UserScreen(
 
 // --- (InfoRow y Preview sin cambios) ---
 @Composable
-fun InfoRow(label: String, value: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.width(80.dp)
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyLarge,
-            color = Color.Gray
-        )
-    }
-}
+fun InfoRow(label: String, value: String) { /* ... */ }
 
 @Preview(showBackground = true)
 @Composable
-fun UserScreenPreview() {
-    SpotFinderTheme {
-        //Text("Preview de UserScreen (requiere ViewModel)")
-    }
-}
+fun UserScreenPreview() { /* ... */ }

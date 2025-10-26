@@ -1,6 +1,14 @@
 package com.example.spotfinder.view
 
 import android.widget.Toast
+// --- ¡NUEVAS IMPORTACIONES! ---
+import android.util.Log
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Fingerprint
+import com.example.spotfinder.security.CryptoManager
+import java.io.File
+import java.io.FileInputStream
+// ------------------------------
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -37,12 +45,23 @@ import com.example.spotfinder.viewmodel.UsuarioViewModel
 fun LoginScreen(navController: NavController, usuarioViewModel: UsuarioViewModel) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    
+
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     val state by usuarioViewModel.loginState.collectAsState()
 
-    // Efecto para reaccionar a los cambios de estado del login
+    // --- ¡NUEVA LÓGICA DE BIOMETRÍA (LECTURA)! ---
+    val cryptoManager = remember { CryptoManager() }
+    val biometricFile = remember { File(context.filesDir, "biometric_creds.bin") }
+    var biometricEnabled by remember { mutableStateOf(false) }
+
+    // Comprobamos (solo una vez) si el archivo de huella existe
+    LaunchedEffect(biometricFile) {
+        biometricEnabled = biometricFile.exists()
+    }
+    // ---------------------------------------------
+
+    // Efecto para reaccionar a los cambios de estado del login (Sin cambios)
     LaunchedEffect(state) {
         when (val currentState = state) {
             is LoginState.Success -> {
@@ -50,13 +69,13 @@ fun LoginScreen(navController: NavController, usuarioViewModel: UsuarioViewModel
                 navController.navigate("home") {
                     popUpTo("login") { inclusive = true }
                 }
-                usuarioViewModel.resetLoginState() // Resetea el estado
+                usuarioViewModel.resetLoginState()
             }
             is LoginState.Error -> {
                 Toast.makeText(context, currentState.message, Toast.LENGTH_SHORT).show()
-                usuarioViewModel.resetLoginState() // Resetea para permitir nuevo intento
+                usuarioViewModel.resetLoginState()
             }
-            else -> Unit // No hacer nada en Idle o Loading
+            else -> Unit
         }
     }
 
@@ -88,7 +107,7 @@ fun LoginScreen(navController: NavController, usuarioViewModel: UsuarioViewModel
                 ) {
                     Text("Iniciar sesión", style = MaterialTheme.typography.headlineSmall, color = colorResource(id = R.color.brand_blue), fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(24.dp))
-                    
+
                     TextField(
                         value = email,
                         onValueChange = { email = it },
@@ -96,7 +115,6 @@ fun LoginScreen(navController: NavController, usuarioViewModel: UsuarioViewModel
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         colors = TextFieldDefaults.colors(
-                            // Corregido: usando los parámetros correctos para M3
                             focusedTextColor = colorResource(id = R.color.brand_blue),
                             unfocusedTextColor = colorResource(id = R.color.brand_blue),
                             focusedContainerColor = Color(0xFFF0F0F0),
@@ -118,7 +136,6 @@ fun LoginScreen(navController: NavController, usuarioViewModel: UsuarioViewModel
                         visualTransformation = PasswordVisualTransformation(),
                         singleLine = true,
                         colors = TextFieldDefaults.colors(
-                            // Corregido: usando los parámetros correctos para M3
                             focusedTextColor = colorResource(id = R.color.brand_blue),
                             unfocusedTextColor = colorResource(id = R.color.brand_blue),
                             focusedContainerColor = Color(0xFFF0F0F0),
@@ -138,7 +155,7 @@ fun LoginScreen(navController: NavController, usuarioViewModel: UsuarioViewModel
                             usuarioViewModel.login(email, password)
                         },
                         modifier = Modifier.fillMaxWidth().height(50.dp),
-                        enabled = state !is LoginState.Loading, // Deshabilita el botón mientras carga
+                        enabled = state !is LoginState.Loading,
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = colorResource(id = R.color.brand_orange))
                     ) {
@@ -157,6 +174,52 @@ fun LoginScreen(navController: NavController, usuarioViewModel: UsuarioViewModel
                             Text("Regístrate ahora", color = colorResource(id = R.color.brand_orange))
                         }
                     }
+
+                    // --- ¡NUEVO BOTÓN DE HUELLA AÑADIDO! ---
+                    if (biometricEnabled) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        OutlinedButton(
+                            onClick = {
+                                try {
+                                    // 1. Abrimos el archivo guardado
+                                    val fis = FileInputStream(biometricFile)
+
+                                    // 2. Desencriptamos. ESTO DISPARARÁ LA HUELLA
+                                    val decryptedBytes = fis.use { cryptoManager.decrypt(it) }
+
+                                    // 3. Convertimos a String
+                                    val credentials = String(decryptedBytes, Charsets.UTF_8)
+
+                                    // 4. Separamos "email:password"
+                                    val (decryptedEmail, decryptedPassword) = credentials.split(":", limit = 2)
+
+                                    // 5. ¡Hacemos login!
+                                    if (decryptedEmail.isNotEmpty() && decryptedPassword.isNotEmpty()) {
+                                        usuarioViewModel.login(decryptedEmail, decryptedPassword)
+                                    } else {
+                                        Toast.makeText(context, "Error al leer credenciales", Toast.LENGTH_SHORT).show()
+                                    }
+
+                                } catch (e: Exception) {
+                                    // Si el usuario cancela o la huella falla, salta un error
+                                    Log.e("LoginScreen", "Error de biometría: ${e.message}")
+                                    Toast.makeText(context, "Autenticación cancelada o fallida", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, Color.Gray)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Fingerprint,
+                                contentDescription = "Huella",
+                                tint = Color.Gray
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Iniciar con huella", color = Color.Gray)
+                        }
+                    }
+                    // --- FIN DEL NUEVO BOTÓN ---
                 }
             }
         }
@@ -167,7 +230,6 @@ fun LoginScreen(navController: NavController, usuarioViewModel: UsuarioViewModel
 @Composable
 fun LoginScreenPreview() {
     SpotFinderTheme {
-        // El preview necesita un ViewModel, se puede mockear o dejar así.
-        // LoginScreen(navController = rememberNavController(), usuarioViewModel = ...)
+        // ... (sin cambios)
     }
 }

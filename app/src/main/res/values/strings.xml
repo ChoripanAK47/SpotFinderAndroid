@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">SpotFinder</string>
+    <string name="welcome_message">Bienvenido a SpotFinder</string>
+    <string name="search_spot_hint">Ej: La Calera, Skatepark…</string>
+    <string name="button_search">Buscar</string>
+    <string name="add_new_spot">Añadir un Nuevo Spot</string>
 </resources>

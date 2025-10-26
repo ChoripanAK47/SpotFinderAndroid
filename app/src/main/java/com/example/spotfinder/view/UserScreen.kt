@@ -1,10 +1,9 @@
-package com.example.spotfinder.screens // Asegúrate que sea tu paquete
+package com.example.spotfinder.view // Asegúrate que sea tu paquete
 
 // --- Importaciones para UI y Funcionalidad ---
 import android.net.Uri // Necesario para la URI de la imagen
 import androidx.activity.compose.rememberLauncherForActivityResult // Para lanzar la galería
 import androidx.activity.result.contract.ActivityResultContracts // Para obtener contenido
-import androidx.compose.foundation.Image // Para mostrar la imagen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable // Para hacer clickeable la imagen
 import androidx.compose.foundation.layout.*
@@ -21,7 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip // Para recortar en forma de círculo
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale // Para escalar la imagen
-import androidx.compose.ui.platform.LocalContext // Contexto (si fuera necesario para Coil avanzado)
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp

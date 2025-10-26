@@ -19,4 +19,9 @@ class SpotRepository(private val spotDao: SpotDao) {
     fun getSpotById(id: Int): Flow<Spot> {
         return spotDao.getSpotById(id)
     }
+
+    // --- ¡AÑADE ESTA FUNCIÓN! ---
+    suspend fun delete(spot: Spot) {
+        spotDao.delete(spot)
+    }
 }

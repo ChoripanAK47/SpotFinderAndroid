@@ -34,6 +34,12 @@ class SpotsViewModel(private val repository: SpotRepository) : ViewModel() {
     fun insert(spot: Spot) = viewModelScope.launch {
         repository.insert(spot)
     }
+
+    // --- ¡AÑADE ESTA FUNCIÓN! (Paso 3) ---
+    fun delete(spot: Spot) = viewModelScope.launch {
+        repository.delete(spot)
+    }
+    // -------------------------------------
 }
 
 // ViewModel Factory para poder pasar el Repository al ViewModel

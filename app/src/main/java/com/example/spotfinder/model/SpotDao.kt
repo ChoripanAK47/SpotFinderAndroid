@@ -1,6 +1,7 @@
 package com.example.spotfinder.model
 
 import androidx.room.Dao
+import androidx.room.Delete // <-- ¡IMPORTACIÓN NUEVA!
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
@@ -20,4 +21,9 @@ interface SpotDao {
 
     @Query("SELECT * FROM spots WHERE nombre_spot LIKE '%' || :query || '%' OR comuna_spot LIKE '%' || :query || '%'")
     fun searchSpots(query: String): Flow<List<Spot>>
+
+    // --- ¡FUNCIÓN AÑADIDA! ---
+    @Delete
+    suspend fun delete(spot: Spot)
+
 }

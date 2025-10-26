@@ -14,4 +14,7 @@ class UsuarioRepository(private val dao: UsuarioDao) {
     suspend fun getUsuario(email: String, password: String): Usuario? {
         return dao.getUsuario(email, password)
     }
+    suspend fun update(usuario: Usuario) {
+        dao.update(usuario) // <-- ¡Correcto!
+    }
 }

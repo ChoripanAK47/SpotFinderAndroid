@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import com.example.spotfinder.model.Usuario
 
 @Dao // Indica que es un Data Access Object
@@ -23,4 +24,6 @@ interface UsuarioDao {
 
     @Query("SELECT * FROM usuarios ORDER BY id DESC")
     suspend fun obtenerUsuarios(): List<Usuario>
+    @Update
+    suspend fun update(usuario: Usuario)
 }

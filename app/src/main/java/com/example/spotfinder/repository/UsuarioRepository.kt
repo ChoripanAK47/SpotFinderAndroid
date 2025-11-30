@@ -1,20 +1,18 @@
 package com.example.spotfinder.repository
 
-import com.example.spotfinder.model.UsuarioDao
+import com.example.spotfinder.model.LoginRequest
+import com.example.spotfinder.model.LoginResponse
 import com.example.spotfinder.model.Usuario
+import com.example.spotfinder.net.APIService
+import retrofit2.Response
 
-class UsuarioRepository(private val dao: UsuarioDao) {
-    
-    suspend fun obtenerUsuarios(): List<Usuario> = dao.obtenerUsuarios()
-    
-    suspend fun insert(usuario: Usuario) {
-        dao.insertUsuario(usuario)
+class UsuarioRepository(private val apiService: APIService) {
+
+    suspend fun login(loginRequest: LoginRequest): Response<LoginResponse> {
+        return apiService.login(loginRequest)
     }
 
-    suspend fun getUsuario(email: String, password: String): Usuario? {
-        return dao.getUsuario(email, password)
-    }
-    suspend fun update(usuario: Usuario) {
-        dao.update(usuario) // <-- ¡Correcto!
+    suspend fun register(usuario: Usuario): Response<Void> {
+        return apiService.register(usuario)
     }
 }

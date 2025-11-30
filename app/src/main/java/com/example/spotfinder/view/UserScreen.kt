@@ -261,28 +261,6 @@ fun UserScreen(
                         }
                     }
                 }
-            } else {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = currentUser?.nombre ?: "Nombre Usuario",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.weight(1f),
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    IconButton(onClick = {
-                        editedName = currentUser?.nombre ?: ""
-                        isEditing = true
-                    }) {
-                        Icon(Icons.Default.Edit, contentDescription = "Editar nombre")
-                    }
-                }
-            }
-            Spacer(modifier = Modifier.height(8.dp))
             Divider(modifier = Modifier.width(100.dp), thickness = 1.dp)
             Spacer(modifier = Modifier.height(8.dp))
 

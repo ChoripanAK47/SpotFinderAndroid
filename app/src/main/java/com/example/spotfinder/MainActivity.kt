@@ -1,17 +1,17 @@
 package com.example.spotfinder
 
-import android.app.Application
 import android.os.Bundle
-import androidx.fragment.app.FragmentActivity
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,29 +31,14 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import coil.compose.rememberAsyncImagePainter
-import com.example.spotfinder.model.AppDatabase
-import com.example.spotfinder.model.Spot
-import com.example.spotfinder.repository.SpotRepository
-import com.example.spotfinder.repository.UsuarioRepository
+import coil.compose.AsyncImage
 import com.example.spotfinder.ui.theme.SpotFinderTheme
 import com.example.spotfinder.util.SessionManager
-import com.example.spotfinder.view.AddSpotScreen
-import com.example.spotfinder.view.LoginScreen
-import com.example.spotfinder.view.RegisterScreen
+import com.example.spotfinder.view.*
 import com.example.spotfinder.viewmodel.SpotsViewModel
-import com.example.spotfinder.viewmodel.SpotsViewModelFactory
 import com.example.spotfinder.viewmodel.UsuarioViewModel
-import com.example.spotfinder.viewmodel.UsuarioViewModelFactory
-import com.example.spotfinder.view.UserScreen
-import com.example.spotfinder.view.MapScreen
 
-import androidx.compose.foundation.clickable
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Delete
-
-class MainActivity : FragmentActivity() {
-
+class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -62,7 +47,7 @@ class MainActivity : FragmentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    SpotFinderApp()
+                    NavGraph()
                 }
             }
         }
@@ -70,21 +55,13 @@ class MainActivity : FragmentActivity() {
 }
 
 @Composable
-fun SpotFinderApp() {
-    val context = LocalContext.current
-    val application = context.applicationContext as Application
-    val database = AppDatabase.getDatabase(application)
-
-    val spotRepository = SpotRepository(database.spotDao())
-    val spotsViewModel: SpotsViewModel = viewModel(factory = SpotsViewModelFactory(spotRepository))
-
-    val usuarioRepository = UsuarioRepository(database.usuarioDao())
-    val usuarioViewModel: UsuarioViewModel = viewModel(factory = UsuarioViewModelFactory(usuarioRepository))
-    
-    val sessionManager = remember { SessionManager(context) }
-    val startDestination = if (sessionManager.isLoggedIn()) "home" else "login"
-
+fun NavGraph() {
     val navController = rememberNavController()
+    val usuarioViewModel: UsuarioViewModel = viewModel()
+    val spotsViewModel: SpotsViewModel = viewModel()
+    val context = LocalContext.current
+    val sessionManager = SessionManager(context.applicationContext)
+    val startDestination = if (sessionManager.isLoggedIn()) "home" else "login"
 
     NavHost(navController = navController, startDestination = startDestination) {
         composable("login") {
@@ -112,7 +89,7 @@ fun SpotFinderApp() {
                 }
             )
         }
-        composable("map_screen") { 
+        composable("map_screen") {
             MapScreen(navController = navController)
         }
     }
@@ -169,7 +146,7 @@ fun HomeScreen(spotsViewModel: SpotsViewModel, navController: NavController, ses
                         }
                     }) {
                         Icon(
-                            imageVector = Icons.Default.ExitToApp,
+                            imageVector = Icons.AutoMirrored.Filled.ExitToApp,
                             contentDescription = "Cerrar Sesión",
                             tint = Color.White
                         )
@@ -193,7 +170,12 @@ fun HomeScreen(spotsViewModel: SpotsViewModel, navController: NavController, ses
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
-            } else {
+            } else if (uiState.error != null){
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(text = uiState.error!!)
+                }
+            }
+            else {
                 SpotList(spots = uiState.spots, spotsViewModel = spotsViewModel)
             }
         }
@@ -242,11 +224,9 @@ fun SpotCard(spot: Spot, viewModel: SpotsViewModel) {
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column {
-            Image(
-                painter = rememberAsyncImagePainter(
-                    model = spot.imageUrl.ifEmpty { R.drawable.spot_image_placeholder }
-                ),
-                contentDescription = spot.nombreSpot,
+            AsyncImage(
+                model = spot.imageUrl?.ifEmpty { R.drawable.spot_image_placeholder } ?: R.drawable.spot_image_placeholder,
+                contentDescription = spot.name,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(180.dp)
@@ -261,12 +241,12 @@ fun SpotCard(spot: Spot, viewModel: SpotsViewModel) {
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = spot.nombreSpot,
+                        text = spot.name,
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp,
                         modifier = Modifier.weight(1f)
                     )
-                    IconButton(onClick = { viewModel.delete(spot) }) {
+                    IconButton(onClick = { viewModel.deleteSpot(spot.id) }) {
                         Icon(
                             imageVector = Icons.Default.Delete,
                             contentDescription = "Eliminar Spot",
@@ -276,7 +256,7 @@ fun SpotCard(spot: Spot, viewModel: SpotsViewModel) {
                 }
 
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(text = spot.comunaSpot, fontSize = 14.sp, color = Color.Gray)
+                Text(text = spot.description, fontSize = 14.sp, color = Color.Gray)
             }
         }
     }

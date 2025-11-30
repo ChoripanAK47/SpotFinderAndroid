@@ -1,27 +1,20 @@
 package com.example.spotfinder.repository
 
-import com.example.spotfinder.model.SpotDao
 import com.example.spotfinder.model.Spot
-import kotlinx.coroutines.flow.Flow
+import com.example.spotfinder.net.APIService
+import retrofit2.Response
 
-class SpotRepository(private val spotDao: SpotDao) {
+class SpotRepository(private val apiService: APIService) {
 
-    val allSpots: Flow<List<Spot>> = spotDao.getAllSpots()
-
-    suspend fun insert(spot: Spot) {
-        spotDao.insertSpot(spot)
+    suspend fun getSpots(): List<Spot> {
+        return apiService.getSpots()
     }
 
-    fun searchSpots(query: String): Flow<List<Spot>> {
-        return spotDao.searchSpots(query)
+    suspend fun createSpot(spot: Spot): Response<Spot> {
+        return apiService.createSpot(spot)
     }
 
-    fun getSpotById(id: Int): Flow<Spot> {
-        return spotDao.getSpotById(id)
-    }
-
-    // --- ¡AÑADE ESTA FUNCIÓN! ---
-    suspend fun delete(spot: Spot) {
-        spotDao.delete(spot)
+    suspend fun deleteSpot(id: Long): Response<Void> {
+        return apiService.deleteSpot(id)
     }
 }

@@ -7,12 +7,12 @@ plugins {
 
 android {
     namespace = "com.example.spotfinder"
-    compileSdk = 36
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.example.spotfinder"
         minSdk = 26
-        targetSdk = 36
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -31,13 +31,17 @@ android {
             )
         }
     }
+
+    // --- AQUÍ ESTABA EL ERROR: ACTUALIZADO A JAVA 17 ---
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "17"
     }
+    // ---------------------------------------------------
+
     buildFeatures {
         compose = true
     }
@@ -85,4 +89,9 @@ dependencies {
     // Google Maps for Compose
     implementation("com.google.maps.android:maps-compose:4.3.3")
     implementation("com.google.android.gms:play-services-maps:18.2.0")
+
+    // --- HERRAMIENTAS PARA PRUEBAS (Test Unitarios) ---
+    testImplementation("io.mockk:mockk:1.13.8")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    testImplementation("junit:junit:4.13.2")
 }

@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.example.spotfinder.data.model.Spot
 import com.example.spotfinder.model.UsuarioDao
 import com.example.spotfinder.model.SpotDao
 

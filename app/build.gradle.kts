@@ -7,12 +7,12 @@ plugins {
 
 android {
     namespace = "com.example.spotfinder"
-    compileSdk = 36
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.example.spotfinder"
         minSdk = 26
-        targetSdk = 36
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -31,13 +31,15 @@ android {
             )
         }
     }
+
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "17"
     }
+
     buildFeatures {
         compose = true
     }
@@ -61,8 +63,6 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
-
-    // --- AÑADIDA --- (Para los íconos 'Public', 'Logout', etc.)
     implementation("androidx.compose.material:material-icons-extended")
 
     testImplementation(libs.junit)
@@ -74,19 +74,28 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     implementation(libs.androidx.navigation.compose)
 
-    // Room Database
-    val room_version = "2.8.3"
+    // Room Database (Mantenemos por ahora, pero la lógica principal pasará a API)
+    val room_version = "2.6.1" // Ajustado a una versión estable común
     implementation("androidx.room:room-runtime:${room_version}")
     implementation("androidx.room:room-ktx:${room_version}")
     ksp("androidx.room:room-compiler:$room_version")
+
+    // Biometría
     implementation("androidx.biometric:biometric:1.1.0")
     implementation("androidx.fragment:fragment-ktx:1.8.1")
 
-    // Google Maps for Compose
+    // Google Maps
     implementation("com.google.maps.android:maps-compose:4.3.3")
     implementation("com.google.android.gms:play-services-maps:18.2.0")
 
-    // Retrofit
-    implementation(libs.retrofit)
-    implementation(libs.converter.gson)
+    // --- NUEVAS DEPENDENCIAS PARA MICROSERVICIOS (RETROFIT) ---
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
+    implementation("com.google.code.gson:gson:2.10.1")
+
+    // Testing
+    testImplementation("io.mockk:mockk:1.13.8")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    testImplementation("junit:junit:4.13.2")
 }

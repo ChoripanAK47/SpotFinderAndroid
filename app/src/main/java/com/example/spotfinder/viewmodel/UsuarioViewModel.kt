@@ -1,5 +1,6 @@
 package com.example.spotfinder.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -67,20 +68,36 @@ class UsuarioViewModel(private val repository: UserRepository) : ViewModel() {
                     val token = loginResponse?.token
                     if (token != null) {
                         _loginState.value = LoginState.Success(token)
-                        // Update current user
+                        // Update current user (usar valores por defecto si faltan campos)
+                        val id = loginResponse.id ?: 0L
+                        val name = loginResponse.name ?: ""
+                        val emailResp = loginResponse.email ?: ""
+                        if (name.isEmpty() || emailResp.isEmpty()) {
+                            Log.w("UsuarioViewModel", "Login response missing user fields: id=$id name='$name' email='$emailResp'")
+                        }
                         _currentUser.value = User(
-                            id = loginResponse.id,
-                            name = loginResponse.name,
-                            email = loginResponse.email,
+                            id = id,
+                            name = name,
+                            email = emailResp,
                             token = token
                         )
                     } else {
+                        Log.w("UsuarioViewModel", "Login successful but token is null")
                         _loginState.value = LoginState.Error("Error en el login: Token nulo")
                     }
                 } else {
-                    _loginState.value = LoginState.Error("Credenciales inválidas o error del servidor.")
+                    // Leer el cuerpo de error del servidor para diagnóstico
+                    val errorBody = try {
+                        response.errorBody()?.string()
+                    } catch (e: Exception) {
+                        "(no error body)"
+                    }
+                    Log.e("UsuarioViewModel", "Login failed: code=${response.code()} message=${response.message()} body=$errorBody")
+                    val serverMsg = if (!errorBody.isNullOrEmpty()) errorBody else "Credenciales inválidas o error del servidor."
+                    _loginState.value = LoginState.Error("${response.code()}: $serverMsg")
                 }
             } catch (e: Exception) {
+                Log.e("UsuarioViewModel", "Login exception", e)
                 _loginState.value = LoginState.Error("Error de conexión: ${e.message}")
             }
         }

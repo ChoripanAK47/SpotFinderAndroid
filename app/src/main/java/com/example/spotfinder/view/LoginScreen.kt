@@ -41,6 +41,7 @@ fun LoginScreen(navController: NavController, usuarioViewModel: UsuarioViewModel
     LaunchedEffect(state) {
         when (val currentState = state) {
             is LoginState.Success -> {
+                sessionManager.setToken(currentState.token)
                 sessionManager.setLoggedIn(true) // Guardar la sesión
                 Toast.makeText(context, "Inicio de sesión exitoso", Toast.LENGTH_SHORT).show()
                 navController.navigate("home") {
@@ -129,7 +130,11 @@ fun LoginScreen(navController: NavController, usuarioViewModel: UsuarioViewModel
                     Button(
                         onClick = {
                             focusManager.clearFocus()
-                            usuarioViewModel.login(email, password)
+                            if (email.isBlank() || password.isBlank()) {
+                                Toast.makeText(context, "Completa correo y contraseña", Toast.LENGTH_SHORT).show()
+                            } else {
+                                usuarioViewModel.login(email.trim(), password)
+                            }
                         },
                         modifier = Modifier.fillMaxWidth().height(50.dp),
                         enabled = state !is LoginState.Loading,

@@ -1,8 +1,8 @@
 package com.example.spotfinder.net
 
-import com.example.spotfinder.model.LoginRequest
-import com.example.spotfinder.model.LoginResponse
-import com.example.spotfinder.model.Spot
+import com.example.spotfinder.data.model.LoginRequest
+import com.example.spotfinder.data.model.LoginResponse
+import com.example.spotfinder.data.model.Spot
 import com.example.spotfinder.model.Usuario
 import retrofit2.Response
 import retrofit2.http.*
@@ -15,7 +15,7 @@ interface APIService {
     suspend fun register(@Body usuario: Usuario): Response<Void>
 
     @GET("spots")
-    suspend fun getSpots(): List<Spot>
+    suspend fun getSpots(): Response<List<Spot>>
 
     @POST("spots")
     suspend fun createSpot(@Body spot: Spot): Response<Spot>

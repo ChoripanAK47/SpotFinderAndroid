@@ -1,12 +1,12 @@
 package com.example.spotfinder.repository
 
-import com.example.spotfinder.model.Spot
+import com.example.spotfinder.data.model.Spot
 import com.example.spotfinder.net.APIService
 import retrofit2.Response
 
 class SpotRepository(private val apiService: APIService) {
 
-    suspend fun getSpots(): List<Spot> {
+    suspend fun getSpots(): Response<List<Spot>> {
         return apiService.getSpots()
     }
 

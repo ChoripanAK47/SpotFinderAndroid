@@ -6,13 +6,15 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.example.spotfinder.model.Usuario
+import kotlin.jvm.JvmSuppressWildcards
 
 @Dao // Indica que es un Data Access Object
+@JvmSuppressWildcards
 interface UsuarioDao {
 
     // Inserta un usuario. Si el email ya existe, ABORTA.
     @Insert(onConflict = OnConflictStrategy.ABORT)
-    suspend fun insertUsuario(user: Usuario)
+    suspend fun insertUsuario(user: Usuario): Long
 
     // Busca un usuario por su email.
     @Query("SELECT * FROM usuarios WHERE email = :email LIMIT 1")
@@ -25,5 +27,5 @@ interface UsuarioDao {
     @Query("SELECT * FROM usuarios ORDER BY id DESC")
     suspend fun obtenerUsuarios(): List<Usuario>
     @Update
-    suspend fun update(usuario: Usuario)
+    suspend fun update(usuario: Usuario): Int
 }

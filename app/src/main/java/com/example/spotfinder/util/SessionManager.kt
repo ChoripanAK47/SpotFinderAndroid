@@ -12,6 +12,7 @@ class SessionManager(context: Context) {
 
     companion object {
         const val IS_LOGGED_IN = "is_logged_in"
+        const val KEY_TOKEN = "auth_token"
     }
 
     /**
@@ -29,5 +30,27 @@ class SessionManager(context: Context) {
      */
     fun isLoggedIn(): Boolean {
         return prefs.getBoolean(IS_LOGGED_IN, false)
+    }
+
+    // --- Token handling ---
+    fun setToken(token: String?) {
+        val editor = prefs.edit()
+        if (token == null) {
+            editor.remove(KEY_TOKEN)
+        } else {
+            editor.putString(KEY_TOKEN, token)
+        }
+        editor.apply()
+    }
+
+    fun getToken(): String? {
+        return prefs.getString(KEY_TOKEN, null)
+    }
+
+    fun clearSession() {
+        val editor = prefs.edit()
+        editor.remove(KEY_TOKEN)
+        editor.putBoolean(IS_LOGGED_IN, false)
+        editor.apply()
     }
 }

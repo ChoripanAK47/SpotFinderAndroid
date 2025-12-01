@@ -7,6 +7,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
@@ -32,6 +33,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
+import com.example.spotfinder.data.model.Spot
 import com.example.spotfinder.ui.theme.SpotFinderTheme
 import com.example.spotfinder.util.SessionManager
 import com.example.spotfinder.view.*
@@ -57,8 +59,12 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun NavGraph() {
     val navController = rememberNavController()
-    val usuarioViewModel: UsuarioViewModel = viewModel()
-    val spotsViewModel: SpotsViewModel = viewModel()
+    // Crear repositorios y factories para inyectarlos en los ViewModels
+    val userRepository = remember { com.example.spotfinder.repository.UserRepository() }
+    val spotsRepository = remember { com.example.spotfinder.repository.SpotsRepository() }
+
+    val usuarioViewModel: UsuarioViewModel = viewModel(factory = com.example.spotfinder.viewmodel.UsuarioViewModelFactory(userRepository))
+    val spotsViewModel: SpotsViewModel = viewModel(factory = com.example.spotfinder.viewmodel.SpotsViewModelFactory(spotsRepository))
     val context = LocalContext.current
     val sessionManager = SessionManager(context.applicationContext)
     val startDestination = if (sessionManager.isLoggedIn()) "home" else "login"
@@ -211,7 +217,7 @@ fun SpotList(spots: List<Spot>, spotsViewModel: SpotsViewModel) {
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(spots) { spot ->
+        items(items = spots) { spot ->
             SpotCard(spot = spot, viewModel = spotsViewModel)
         }
     }

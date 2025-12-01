@@ -260,7 +260,8 @@ fun UserScreen(
                             Icon(Icons.Default.Done, contentDescription = "Guardar nombre")
                         }
                     }
-                }
+                } // <- cierra Row
+            } // <- cierra if (isEditing)
             Divider(modifier = Modifier.width(100.dp), thickness = 1.dp)
             Spacer(modifier = Modifier.height(8.dp))
 

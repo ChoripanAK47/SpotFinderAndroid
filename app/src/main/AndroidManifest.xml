@@ -25,7 +25,8 @@
         android:label="@string/app_name"
         android:roundIcon="@drawable/logoapk"
         android:supportsRtl="true"
-        android:theme="@style/Theme.SpotFinder">
+        android:theme="@style/Theme.SpotFinder"
+        android:usesCleartextTraffic="true">
 
         <!-- API Key de Google Maps -->
         <meta-data
@@ -43,15 +44,15 @@
             </intent-filter>
         </activity>
 
-        <provider
-            android:name="androidx.core.content.FileProvider"
-            android:authorities="${applicationId}.provider"
-            android:exported="false"
-            android:grantUriPermissions="true">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/file_paths" />
-        </provider>
+       <provider
+           android:name="androidx.core.content.FileProvider"
+           android:authorities="${applicationId}.provider"
+           android:exported="false"
+           android:grantUriPermissions="true">
+           <meta-data
+               android:name="android.support.FILE_PROVIDER_PATHS"
+               android:resource="@xml/file_paths" />
+       </provider>
 
     </application>
 

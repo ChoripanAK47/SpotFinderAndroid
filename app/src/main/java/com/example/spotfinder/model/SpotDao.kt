@@ -1,29 +1,31 @@
 package com.example.spotfinder.model
 
 import androidx.room.Dao
-import androidx.room.Delete // <-- ¡IMPORTACIÓN NUEVA!
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
+import com.example.spotfinder.data.model.Spot
+import kotlin.jvm.JvmSuppressWildcards
 
 @Dao
+@JvmSuppressWildcards
 interface SpotDao {
 
-    @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
-    suspend fun insertSpot(spot: Spot)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertSpot(spot: Spot): Long
 
-    @Query("SELECT * FROM spots ORDER BY nombre_spot ASC")
+    @Query("SELECT * FROM spots ORDER BY name ASC")
     fun getAllSpots(): Flow<List<Spot>>
 
-    @Query("SELECT * FROM spots WHERE idSpot = :id")
-    fun getSpotById(id: Int): Flow<Spot>
+    @Query("SELECT * FROM spots WHERE id = :id")
+    fun getSpotById(id: Long): Flow<Spot?>
 
-    @Query("SELECT * FROM spots WHERE nombre_spot LIKE '%' || :query || '%' OR comuna_spot LIKE '%' || :query || '%'")
+    @Query("SELECT * FROM spots WHERE name LIKE '%' || :query || '%' OR description LIKE '%' || :query || '%'")
     fun searchSpots(query: String): Flow<List<Spot>>
 
-    // --- ¡FUNCIÓN AÑADIDA! ---
     @Delete
-    suspend fun delete(spot: Spot)
+    suspend fun delete(spot: Spot): Int
 
 }

@@ -2,11 +2,12 @@
 
 SpotFinder es una aplicación móvil nativa para Android diseñada para ayudar a los usuarios a descubrir, compartir y calificar "spots" o espacios públicos para socializar. Este proyecto nace de la necesidad de tener una fuente de información centralizada y confiable, enriquecida por la propia comunidad.
 
-## Estado del Proyecto
+## Desarolladores
+Este proyecto está siendo desarollado por:
+*  **Tomás Olmos Vásquez**
+*  **Ignacio Kort Kort**
 
-Actualmente, el proyecto se encuentra en una fase de desarrollo inicial, con la arquitectura base y las funcionalidades core ya implementadas.
-
-## Funcionalidades Implementadas
+## Funcionalidades
 
 *   **Arquitectura MVVM**: La aplicación está construida sobre un patrón Model-View-ViewModel robusto, separando la lógica de la interfaz de usuario.
 *   **Base de Datos Local**: Se utiliza **Room** para la persistencia de datos locales, permitiendo almacenar usuarios y spots directamente en el dispositivo.
@@ -20,6 +21,24 @@ Actualmente, el proyecto se encuentra en una fase de desarrollo inicial, con la 
     *   **Cámara y Galería**: Los usuarios pueden añadir una imagen a un nuevo spot, ya sea tomándola con la cámara o seleccionándola desde la galería del dispositivo.
 *   **Interfaz de Usuario Moderna**: La UI está construida enteramente con **Jetpack Compose**, el framework declarativo moderno de Android.
 
+## Endpoints Usados
+
+Actualmente, la aplicación funciona de manera local y no consume endpoints externos. La persistencia de datos se gestiona a través de una base de datos Room en el dispositivo.
+
+## Instrucciones para Ejecutar el Proyecto
+
+1.  **Clonar el Repositorio**: 
+    ```bash
+    git clone https://github.com/ignaciokort/SpotFinder-android.git
+    ```
+2.  **Abrir en Android Studio**:
+    *   Abre Android Studio.
+    *   Selecciona `File > Open` y navega hasta la carpeta del proyecto clonado.
+3.  **Sincronizar Gradle**: Android Studio debería sincronizar automáticamente el proyecto. Si no lo hace, puedes forzar la sincronización desde `File > Sync Project with Gradle Files`.
+4.  **Ejecutar la Aplicación**:
+    *   Selecciona un emulador o un dispositivo físico.
+    *   Presiona el botón `Run 'app'` (o `Shift + F10`).
+
 ## Stack Tecnológico
 
 *   **Lenguaje**: [Kotlin](https://kotlinlang.org/)
@@ -31,18 +50,5 @@ Actualmente, el proyecto se encuentra en una fase de desarrollo inicial, con la 
 *   **Carga de Imágenes**: [Coil](https://coil-kt.github.io/coil/)
 *   **Inyección de Dependencias (manual)**: Usando `ViewModelFactory` para proveer dependencias a los ViewModels.
 
-## Roadmap (Futuras Implementaciones)
-
-*   **Funcionalidad de Búsqueda y Filtro**: Implementar la lógica en la `SearchBar` y los `FilterChips` para filtrar la lista de spots en tiempo real.
-*   **Integración con Mapas (Google Maps)**:
-    *   Mostrar todos los spots como marcadores en un mapa interactivo.
-    *   Obtener la ubicación actual del usuario para mostrar spots cercanos.
-    *   Trazar rutas desde la ubicación del usuario hasta un spot seleccionado.
-*   **Pantalla de Detalle del Spot**: Crear una nueva pantalla que muestre toda la información de un spot, incluyendo su descripción completa, calificaciones y fotos.
-*   **Calificaciones y Reseñas**: Permitir a los usuarios calificar los spots (seguridad, limpieza, etc.) y dejar comentarios.
 *   **Perfiles de Usuario**: Una sección donde los usuarios puedan ver los spots que han creado o guardado como favoritos.
 *   **Edición y Eliminación**: Permitir a los creadores de un spot que puedan editar su información o eliminarlo.
-## Desarolladores
-Este proyecto está siendo desarollado por:
-*  **Tomás Olmos Vásquez**
-*  **Ignacio Kort Kort**

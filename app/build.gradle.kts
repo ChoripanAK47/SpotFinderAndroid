@@ -22,6 +22,18 @@ android {
         }
     }
 
+    // Signing configuration for release (uses release-keystore.jks in project root)
+    signingConfigs {
+        create("release") {
+            // NOTE: These passwords are defaults for local testing. Replace with secure values and
+            // move them to local.properties or environment variables for production use.
+            storeFile = file("release-keystore.jks")
+            storePassword = "android"
+            keyAlias = "release_key"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -29,6 +41,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 

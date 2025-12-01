@@ -8,6 +8,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
@@ -20,10 +23,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -35,14 +40,36 @@ import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.example.spotfinder.data.model.Spot
 import com.example.spotfinder.ui.theme.SpotFinderTheme
+import com.example.spotfinder.ui.theme.BrandBlue
+import com.example.spotfinder.ui.theme.BrandOrange
 import com.example.spotfinder.util.SessionManager
 import com.example.spotfinder.view.*
 import com.example.spotfinder.viewmodel.SpotsViewModel
 import com.example.spotfinder.viewmodel.UsuarioViewModel
+import java.io.File
+
+// Helper para convertir posibles valores nulos a String seguro para Text composable
+private fun safeStr(value: Any?): String = value?.toString() ?: ""
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Manejo global de excepciones para capturar crash y volcar stacktrace a archivo
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            try {
+                val file = File(filesDir, "last_crash.log")
+                file.writeText("Thread: ${thread.name}\n")
+                file.appendText("${throwable.stackTraceToString()}")
+            } catch (e: Exception) {
+                // Si falla la escritura, al menos lo mostramos en logcat
+                android.util.Log.e("GlobalCrashHandler", "Failed to write crash file", e)
+            }
+            // También imprimir en logcat para captura por adb logcat
+            android.util.Log.e("GlobalCrashHandler", "Uncaught exception in thread ${thread.name}", throwable)
+            // Re-lanzar la excepción original para que el proceso termine como normalmente
+            android.os.Process.killProcess(android.os.Process.myPid())
+            System.exit(2)
+        }
         setContent {
             SpotFinderTheme {
                 Surface(
@@ -118,7 +145,7 @@ fun HomeScreen(spotsViewModel: SpotsViewModel, navController: NavController, ses
                         Image(
                             painter = painterResource(id = R.drawable.logospotfinder),
                             contentDescription = "Logo SpotFinder",
-                            modifier = Modifier.height(32.dp)
+                            modifier = Modifier.height(36.dp)
                         )
                         DropdownMenu(
                             expanded = menuExpanded,
@@ -142,11 +169,12 @@ fun HomeScreen(spotsViewModel: SpotsViewModel, navController: NavController, ses
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = colorResource(id = R.color.brand_blue)
+                    containerColor = BrandBlue
                 ),
                 actions = {
                     IconButton(onClick = {
                         sessionManager.setLoggedIn(false)
+                        sessionManager.setToken(null)
                         navController.navigate("login") {
                             popUpTo("home") { inclusive = true }
                         }
@@ -161,8 +189,11 @@ fun HomeScreen(spotsViewModel: SpotsViewModel, navController: NavController, ses
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { navController.navigate("add_spot") }) {
-                Icon(Icons.Default.Add, contentDescription = "Añadir Spot")
+            FloatingActionButton(
+                onClick = { navController.navigate("add_spot") },
+                containerColor = BrandOrange
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Añadir Spot", tint = Color.White)
             }
         }
     ) { innerPadding ->
@@ -174,7 +205,7 @@ fun HomeScreen(spotsViewModel: SpotsViewModel, navController: NavController, ses
 
             if (uiState.isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+                    CircularProgressIndicator(color = BrandBlue)
                 }
             } else if (uiState.error != null){
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -182,7 +213,24 @@ fun HomeScreen(spotsViewModel: SpotsViewModel, navController: NavController, ses
                 }
             }
             else {
-                SpotList(spots = uiState.spots, spotsViewModel = spotsViewModel)
+                // Adaptive layout: grid on wide screens, list on narrow
+                val configuration = LocalConfiguration.current
+                val screenWidth = configuration.screenWidthDp
+                if (screenWidth > 600) {
+                    // grid with 2 columns for tablets/large screens
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        gridItems(uiState.spots) { spot ->
+                            SpotCardGrid(spot = spot, viewModel = spotsViewModel)
+                        }
+                    }
+                } else {
+                    SpotList(spots = uiState.spots, spotsViewModel = spotsViewModel)
+                }
             }
         }
     }
@@ -227,16 +275,17 @@ fun SpotList(spots: List<Spot>, spotsViewModel: SpotsViewModel) {
 fun SpotCard(spot: Spot, viewModel: SpotsViewModel) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        shape = RoundedCornerShape(12.dp)
     ) {
         Column {
             AsyncImage(
-                model = spot.imageUrl?.ifEmpty { R.drawable.spot_image_placeholder } ?: R.drawable.spot_image_placeholder,
-                contentDescription = spot.name,
+                model = spot.imageUrl?.takeIf { it.isNotBlank() } ?: R.drawable.spot_image_placeholder,
+                contentDescription = safeStr(spot.name),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(180.dp)
-                    .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)),
+                    .height(200.dp)
+                    .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)),
                 contentScale = ContentScale.Crop
             )
             Column(modifier = Modifier.padding(16.dp)) {
@@ -247,24 +296,52 @@ fun SpotCard(spot: Spot, viewModel: SpotsViewModel) {
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = spot.name,
+                        text = safeStr(spot.name),
                         fontWeight = FontWeight.Bold,
-                        fontSize = 20.sp,
-                        modifier = Modifier.weight(1f)
+                        fontSize = 18.sp,
+                        modifier = Modifier.weight(1f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
-                    IconButton(onClick = { viewModel.deleteSpot(spot.id) }) {
+                    IconButton(onClick = { spot.id?.let { viewModel.deleteSpot(it) } }) {
                         Icon(
                             imageVector = Icons.Default.Delete,
                             contentDescription = "Eliminar Spot",
-                            tint = Color.Gray
+                            tint = BrandBlue
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(text = spot.description, fontSize = 14.sp, color = Color.Gray)
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = safeStr(spot.description),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.DarkGray,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+                // Placeholder for meta data (rating / location)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    // El backend/DB actual no expone 'comuna' en el modelo Spot local.
+                    // Mostrar solo coordenadas (latitude, longitude)
+                    Text(text = "", style = MaterialTheme.typography.labelSmall)
+                    Text(text = safeStr(spot.latitude) + ", " + safeStr(spot.longitude), style = MaterialTheme.typography.labelSmall)
+                }
             }
         }
+    }
+}
+
+@Composable
+fun SpotCardGrid(spot: Spot, viewModel: SpotsViewModel) {
+    Box(modifier = Modifier.padding(4.dp)) {
+        SpotCard(spot = spot, viewModel = viewModel)
     }
 }
 

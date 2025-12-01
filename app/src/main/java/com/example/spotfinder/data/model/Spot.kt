@@ -8,17 +8,17 @@ import androidx.room.PrimaryKey
 data class Spot(
     @PrimaryKey(autoGenerate = true)
     @ColumnInfo(name = "id")
-    val id: Long = 0,
+    val id: Long? = null,
     @ColumnInfo(name = "name")
-    val name: String,
+    val name: String? = null,
     @ColumnInfo(name = "description")
-    val description: String,
+    val description: String? = null,
     @ColumnInfo(name = "latitude")
-    val latitude: Double,
+    val latitude: Double? = null,
     @ColumnInfo(name = "longitude")
-    val longitude: Double,
+    val longitude: Double? = null,
     @ColumnInfo(name = "imageUrl")
     val imageUrl: String? = null,
     @ColumnInfo(name = "userId")
-    val userId: Long
+    val userId: Long? = null
 )

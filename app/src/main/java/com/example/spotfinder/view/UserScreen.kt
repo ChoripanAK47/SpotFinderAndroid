@@ -74,7 +74,6 @@ fun UserScreen(
     val updateState by usuarioViewModel.updateProfileState.collectAsState()
 
     val context = LocalContext.current
-    val activity = LocalContext.current as FragmentActivity
     val scope = rememberCoroutineScope()
 
     var showPasswordDialog by remember { mutableStateOf(false) }
@@ -262,21 +261,21 @@ fun UserScreen(
                     }
                 } // <- cierra Row
             } // <- cierra if (isEditing)
-            Divider(modifier = Modifier.width(100.dp), thickness = 1.dp)
+            HorizontalDivider(modifier = Modifier.width(100.dp), thickness = 1.dp)
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(text = "Usuario Promedio de SpotFinder", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
             Spacer(modifier = Modifier.height(8.dp))
             SuggestionChip(onClick = { /* No action */ }, label = { Text("Activo", fontSize = 12.sp) }, colors = SuggestionChipDefaults.suggestionChipColors(containerColor = Color(0xFFE6F4EA)))
             Spacer(modifier = Modifier.height(24.dp))
-            Divider(modifier = Modifier.fillMaxWidth(0.8f), thickness = 1.dp)
+            HorizontalDivider(modifier = Modifier.fillMaxWidth(0.8f), thickness = 1.dp)
             Spacer(modifier = Modifier.height(24.dp))
 
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.Start
             ) {
-                InfoRow(label = "Correo:", value = currentUser?.email ?: "...")
+                InfoRow(label = "Correo:", value = currentUser?.email)
             }
             Spacer(modifier = Modifier.height(32.dp))
 
@@ -310,7 +309,7 @@ fun UserScreen(
                 },
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red),
-                border = ButtonDefaults.outlinedButtonBorder,
+                border = ButtonDefaults.outlinedButtonBorder(enabled = true),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Cerrar sesión")
@@ -323,8 +322,50 @@ fun UserScreen(
 
 // --- (InfoRow y Preview sin cambios) ---
 @Composable
-fun InfoRow(label: String, value: String) { /* ... */ }
+fun InfoRow(label: String, value: Any?) {
+    val display = value?.toString() ?: "..."
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(text = label, style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+        Text(text = display, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+    }
+
+}
 
 @Preview(showBackground = true)
 @Composable
-fun UserScreenPreview() { /* ... */ }
+fun UserScreenPreview() {
+    SpotFinderTheme {
+        // Static preview: no ViewModel instantiation to avoid preview-time issues
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(120.dp)
+                    .clip(CircleShape)
+                    .background(Color.LightGray),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = "Avatar",
+                    modifier = Modifier.size(70.dp),
+                    tint = Color.Gray
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("Usuario de ejemplo", style = MaterialTheme.typography.titleLarge)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("correo@ejemplo.com", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+        }
+    }
+}

@@ -15,6 +15,8 @@ roomKtx = "2.6.1"
 roomRuntime = "2.6.1"
 retrofit = "2.9.0"
 converterGson = "2.9.0"
+mockk = "1.14.6"
+coroutinesTest = "1.10.2"
 
 [libraries]
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
@@ -46,4 +48,3 @@ converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-

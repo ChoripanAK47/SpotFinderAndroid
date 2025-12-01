@@ -70,6 +70,24 @@ class SpotsViewModel(private val repository: SpotsRepository) : ViewModel() {
         }
     }
 
+    // Nueva sobrecarga para crear spot con multipart (JSON spot + imágenes)
+    fun createSpotMultipart(spotJson: okhttp3.RequestBody, files: List<okhttp3.MultipartBody.Part>?) {
+        viewModelScope.launch {
+            _spotState.value = SpotState.Loading
+            try {
+                val response = repository.createSpotMultipart(spotJson, files)
+                if (response.isSuccessful) {
+                    _spotState.value = SpotState.Success
+                    fetchSpots()
+                } else {
+                    _spotState.value = SpotState.Error("Error creating spot: ${response.message()}")
+                }
+            } catch (e: Exception) {
+                _spotState.value = SpotState.Error("Error creating spot: ${e.message}")
+            }
+        }
+    }
+
     fun deleteSpot(id: Long) {
         // API might not support delete yet, or we need to add it to repository
         // For now, just log or do nothing if not implemented in repo
